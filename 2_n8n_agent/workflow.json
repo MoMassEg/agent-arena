@@ -1,0 +1,474 @@
+{
+  "name": "Code Review Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "code-review",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "code-review-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// \u2500\u2500 Input Validation \u2500\u2500\n// Checks that the incoming request has valid code and a supported language.\n\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const code = item.json.body?.code || item.json.code || '';\n  const language = (item.json.body?.language || item.json.language || '').toLowerCase().trim();\n\n  // Supported languages list\n  const supportedLanguages = [\n    'python', 'javascript', 'typescript', 'java', 'c', 'cpp', 'c++',\n    'csharp', 'c#', 'go', 'rust', 'ruby', 'php', 'swift', 'kotlin',\n    'scala', 'r', 'sql', 'bash', 'shell', 'powershell', 'html', 'css',\n    'yaml', 'json', 'xml', 'dockerfile', 'terraform', 'hcl'\n  ];\n\n  // Programming keywords that indicate real code (not random text)\n  const codeKeywords = [\n    'function', 'def ', 'class ', 'import ', 'from ', 'return',\n    'const ', 'let ', 'var ', 'if ', 'else', 'for ', 'while ',\n    'print', 'console', 'public ', 'private ', 'void ', 'int ',\n    'string', 'static', 'async', 'await', 'try', 'catch',\n    'switch', 'case', 'break', 'continue', 'new ', 'this',\n    'self', 'require', 'module', 'export', 'include', 'using',\n    'package', 'struct', 'enum', 'interface', 'impl ', 'fn ',\n    'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP',\n    'func ', 'fmt.', 'println', 'BEGIN', 'END', '#include',\n    '=>', '->', '===', '!==', '==', '!=', '&&', '||',\n    '{', '}', '()', ';', '//', '/*', '*/', '#!/'\n  ];\n\n  const errors = [];\n\n  // Check: code must not be empty\n  if (!code || code.trim().length === 0) {\n    errors.push('Code field is empty or missing.');\n  }\n\n  // Check: code should look like actual code\n  if (code && code.trim().length > 0) {\n    const looksLikeCode = codeKeywords.some(kw =>\n      code.toLowerCase().includes(kw.toLowerCase())\n    );\n    if (!looksLikeCode && code.trim().length < 10) {\n      errors.push('Input does not appear to be valid code.');\n    }\n  }\n\n  // Check: language must be provided and supported\n  if (!language) {\n    errors.push('Language field is missing.');\n  } else if (!supportedLanguages.includes(language)) {\n    errors.push(`Unsupported language: '${language}'. Supported: ${supportedLanguages.join(', ')}`);\n  }\n\n  const isValid = errors.length === 0;\n\n  results.push({\n    json: {\n      isValid: isValid,\n      code: code,\n      language: language,\n      errors: errors,\n      validationMessage: isValid\n        ? 'Input is valid.'\n        : `Validation failed: ${errors.join(' ')}`\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "input-validation",
+      "name": "Input Validation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "valid-check",
+              "leftValue": "={{ $json.isValid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-valid",
+      "name": "Valid Input?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'openai/gpt-oss-120b', temperature: 0.1, messages: [{ role: 'system', content: 'You are an expert code reviewer. Analyze the provided code and respond ONLY with a valid JSON object (no markdown, no extra text). Use this exact schema:\\n{\\n  \"summary\": \"Brief overall assessment\",\\n  \"issues\": [\\n    {\\n      \"severity\": \"critical|warning|info\",\\n      \"category\": \"security|performance|style|bug|best-practice\",\\n      \"line\": \"line number or range if identifiable\",\\n      \"description\": \"What the issue is\",\\n      \"suggestion\": \"How to fix it\"\\n    }\\n  ],\\n  \"metrics\": {\\n    \"readability\": 8,\\n    \"maintainability\": 7,\\n    \"security\": 6,\\n    \"performance\": 7,\\n    \"overall\": 7\\n  }\\n}\\nIf the code is clean with no issues, return an empty issues array and high scores.' }, { role: 'user', content: 'Review this ' + $json.language + ' code:\\n\\n```' + $json.language + '\\n' + $json.code + '\\n```' }] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "groq-review",
+      "name": "Groq - Code Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "RozpbFsonn3EHBlg",
+          "name": "Groq API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// \u2500\u2500 Parse LLM Response \u2500\u2500\n// Extracts the JSON review from the Groq chat completion response\n// and determines the overall severity level.\n\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  try {\n    // Extract the assistant's message content\n    const rawContent = item.json.choices?.[0]?.message?.content || '';\n\n    // Try to parse JSON \u2014 handle cases where LLM wraps it in markdown code blocks\n    let cleaned = rawContent.trim();\n    if (cleaned.startsWith('```json')) {\n      cleaned = cleaned.slice(7);\n    } else if (cleaned.startsWith('```')) {\n      cleaned = cleaned.slice(3);\n    }\n    if (cleaned.endsWith('```')) {\n      cleaned = cleaned.slice(0, -3);\n    }\n    cleaned = cleaned.trim();\n\n    const review = JSON.parse(cleaned);\n\n    // Determine the highest severity found\n    const issues = review.issues || [];\n    let severity = 'clean';\n\n    if (issues.some(i => i.severity === 'critical')) {\n      severity = 'critical';\n    } else if (issues.some(i => i.severity === 'warning')) {\n      severity = 'warning';\n    } else if (issues.length > 0) {\n      severity = 'info';\n    }\n\n    // Carry forward the original code and language for the deep analysis node\n    const prevData = $('Input Validation').first().json;\n\n    results.push({\n      json: {\n        review: review,\n        severity: severity,\n        issueCount: issues.length,\n        code: prevData.code,\n        language: prevData.language,\n        model: item.json.model || 'llama-3.3-70b-versatile',\n        tokensUsed: item.json.usage?.total_tokens || 0,\n        parseSuccess: true\n      }\n    });\n  } catch (error) {\n    results.push({\n      json: {\n        review: {\n          summary: 'Failed to parse LLM response.',\n          issues: [],\n          metrics: {\n            readability: 0,\n            maintainability: 0,\n            security: 0,\n            performance: 0,\n            overall: 0\n          }\n        },\n        severity: 'info',\n        issueCount: 0,\n        parseSuccess: false,\n        parseError: error.message\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "id": "parse-response",
+      "name": "Parse LLM Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.severity }}",
+                    "rightValue": "critical",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Critical"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.severity }}",
+                    "rightValue": "warning",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Warning"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.severity }}",
+                    "rightValue": "clean",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Clean"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.severity }}",
+                    "rightValue": "info",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Info"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "severity-router",
+      "name": "Severity Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        1440,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'openai/gpt-oss-120b', temperature: 0.1, messages: [{ role: 'system', content: 'You are a senior security engineer and code auditor. You are given code that has CRITICAL issues identified in a prior review. Your job is to perform a deep analysis. Respond ONLY with valid JSON (no markdown). Use this schema:\\n{\\n  \"deepAnalysis\": {\\n    \"exploitScenarios\": [\\n      {\\n        \"vulnerability\": \"Name of vulnerability\",\\n        \"attackVector\": \"How an attacker could exploit this\",\\n        \"impact\": \"What damage could result\",\\n        \"cvssEstimate\": \"estimated CVSS score 0-10\"\\n      }\\n    ],\\n    \"fixSuggestions\": [\\n      {\\n        \"issue\": \"The critical issue\",\\n        \"currentCode\": \"The problematic code snippet\",\\n        \"fixedCode\": \"The corrected code snippet\",\\n        \"explanation\": \"Why this fix works\"\\n      }\\n    ],\\n    \"prioritizedActions\": [\\n      \"Action 1 (highest priority)\",\\n      \"Action 2\",\\n      \"Action 3\"\\n    ]\\n  }\\n}' }, { role: 'user', content: 'Perform a deep security analysis of this ' + $json.language + ' code. The initial review found these critical issues: ' + JSON.stringify(($json.review?.issues || []).filter(i => i.severity === 'critical')) + '\\n\\nFull code:\\n```' + $json.language + '\\n' + $json.code + '\\n```' }] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "groq-deep-analysis",
+      "name": "Groq - Deep Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1720,
+        60
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "RozpbFsonn3EHBlg",
+          "name": "Groq API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// \u2500\u2500 Format Final Report \u2500\u2500\n// Compiles the review (and optional deep analysis) into a structured JSON report.\n\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  // Try to get the parsed review data \u2014 it might come from different paths\n  let reviewData;\n  try {\n    reviewData = $('Parse LLM Response').first().json;\n  } catch (e) {\n    reviewData = item.json;\n  }\n\n  const review = reviewData.review || item.json.review || {};\n  const severity = reviewData.severity || item.json.severity || 'info';\n  const code = reviewData.code || item.json.code || '';\n  const language = reviewData.language || item.json.language || '';\n\n  // Check if this item came through the deep analysis path\n  let deepAnalysis = null;\n  try {\n    const deepResponse = $('Groq - Deep Analysis').first().json;\n    if (deepResponse && deepResponse.choices) {\n      let deepContent = deepResponse.choices[0]?.message?.content || '';\n      deepContent = deepContent.trim();\n      if (deepContent.startsWith('```json')) deepContent = deepContent.slice(7);\n      if (deepContent.startsWith('```')) deepContent = deepContent.slice(3);\n      if (deepContent.endsWith('```')) deepContent = deepContent.slice(0, -3);\n      deepAnalysis = JSON.parse(deepContent.trim()).deepAnalysis;\n    }\n  } catch (e) {\n    // No deep analysis available \u2014 that's fine for non-critical paths\n    deepAnalysis = null;\n  }\n\n  // Build the final report\n  const report = {\n    status: 'success',\n    timestamp: new Date().toISOString(),\n    input: {\n      language: language,\n      codeLength: code.length,\n      codePreview: code.substring(0, 100) + (code.length > 100 ? '...' : '')\n    },\n    review: {\n      summary: review.summary || 'No summary available.',\n      severity: severity,\n      issueCount: (review.issues || []).length,\n      issues: (review.issues || []).map(issue => ({\n        severity: issue.severity || 'info',\n        category: issue.category || 'general',\n        line: issue.line || 'N/A',\n        description: issue.description || '',\n        suggestion: issue.suggestion || ''\n      })),\n      metrics: review.metrics || {\n        readability: 0,\n        maintainability: 0,\n        security: 0,\n        performance: 0,\n        overall: 0\n      }\n    },\n    deepAnalysis: deepAnalysis,\n    metadata: {\n      model: reviewData.model || 'llama-3.3-70b-versatile',\n      tokensUsed: reviewData.tokensUsed || 0,\n      engine: 'n8n-workflow',\n      version: '1.0.0'\n    }\n  };\n\n  results.push({ json: report });\n}\n\nreturn results;"
+      },
+      "id": "format-report",
+      "name": "Format Final Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-success",
+      "name": "Respond - Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2260,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'error', timestamp: new Date().toISOString(), error: { type: 'VALIDATION_ERROR', message: $json.validationMessage, details: $json.errors }, metadata: { engine: 'n8n-workflow', version: '1.0.0' } }) }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-error",
+      "name": "Respond - Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Input Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Validation": {
+      "main": [
+        [
+          {
+            "node": "Valid Input?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Input?": {
+      "main": [
+        [
+          {
+            "node": "Groq - Code Review",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq - Code Review": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM Response": {
+      "main": [
+        [
+          {
+            "node": "Severity Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Severity Router": {
+      "main": [
+        [
+          {
+            "node": "Groq - Deep Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Final Report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Final Report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Final Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq - Deep Analysis": {
+      "main": [
+        [
+          {
+            "node": "Format Final Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Final Report": {
+      "main": [
+        [
+          {
+            "node": "Respond - Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "code-review",
+      "id": "1"
+    },
+    {
+      "name": "ai-agent",
+      "id": "2"
+    }
+  ],
+  "triggerCount": 1,
+  "pinData": {},
+  "versionId": "1"
+}

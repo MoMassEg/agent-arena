@@ -1,0 +1,306 @@
+[
+  {
+    "name": "Python Off-by-One Error",
+    "report": {
+      "status": "reviewed",
+      "input_summary": {
+        "language": "python",
+        "line_count": 11,
+        "non_empty_line_count": 10,
+        "has_functions": true,
+        "has_classes": false
+      },
+      "findings": {
+        "bugs": [
+          {
+            "type": "logic_error",
+            "description": "Off\u2011by\u2011one error in the slice. The expression `lst[len(lst)-n+1:]` skips the first element of the desired result, returning only n\u20111 items. The correct slice is `lst[len(lst)-n:]` or simply `lst[-n:]`."
+          },
+          {
+            "type": "edge_case",
+            "description": "When `n` is larger than the list length the function returns a shallow copy (`lst[:]`). This is correct but unnecessary copying; returning the original list would be more efficient."
+          }
+        ],
+        "security_issues": [
+          {
+            "type": "none",
+            "description": "The function only performs list slicing and does not execute code, access external resources, or modify mutable state, so there are no apparent security vulnerabilities."
+          }
+        ],
+        "style_issues": [
+          {
+            "type": "missing_type_hints",
+            "description": "Function signature lacks type annotations (e.g., `def get_last_n_items(lst: List[Any], n: int) -> List[Any]:`)."
+          },
+          {
+            "type": "docstring",
+            "description": "Docstring does not document parameters or return type according to common conventions (e.g., NumPy or Google style)."
+          },
+          {
+            "type": "non\u2011idiomatic_slicing",
+            "description": "Using `len(lst)-n+1` is harder to read than the idiomatic `lst[-n:]`."
+          },
+          {
+            "type": "unnecessary_copy",
+            "description": "Returning `lst[:]` creates a copy even when the caller could safely receive the original list."
+          }
+        ],
+        "performance_issues": [
+          {
+            "type": "unnecessary_copy",
+            "description": "When `n >= len(lst)` the function returns a full copy of the list. Returning the original list would avoid the O(len(lst)) copy."
+          },
+          {
+            "type": "inefficient_slice_calculation",
+            "description": "Computing `len(lst)-n+1` adds extra arithmetic; using negative indexing (`lst[-n:]`) is both clearer and marginally faster."
+          }
+        ],
+        "overall_quality": "needs_improvement",
+        "summary": "The function contains a critical off\u2011by\u2011one bug that returns the wrong elements. While there are no security concerns, the code lacks type hints, uses a non\u2011idiomatic slicing expression, and makes unnecessary copies of the list. Refactoring to `return lst[-n:]` (with proper input validation and documentation) would fix the bug, improve readability, and slightly boost performance."
+      },
+      "severity": "critical",
+      "deep_analysis": {
+        "fix_suggestions": [
+          {
+            "issue": "Off\u2011by\u2011one error in slice calculation",
+            "fix": "Use a correct slice that starts at `len(lst) - n` (or simply `-n`). This returns exactly `n` elements.",
+            "corrected_code": "def get_last_n_items(lst, n):\n    \"\"\"Return the last n items from a list.\n\n    The function now correctly handles all valid values of *n* and avoids\n    off\u2011by\u2011one mistakes.\n    \"\"\"\n    if n <= 0:\n        return []\n    # If n is larger than the list, return the whole list (no copy needed)\n    if n >= len(lst):\n        return lst\n    # Correct slice \u2013 returns exactly *n* items\n    return lst[-n:]\n"
+          },
+          {
+            "issue": "Unnecessary shallow copy when `n >= len(lst)`",
+            "fix": "Return the original list reference instead of creating a copy. The caller can decide whether they need a copy; the function\u2019s contract is to return the last *n* items, not to guarantee immutability.",
+            "corrected_code": "def get_last_n_items(lst, n):\n    \"\"\"Return the last n items from a list.\n\n    * If *n* \u2264 0 \u2192 empty list\n    * If *n* \u2265 len(lst) \u2192 the original list (no copy)\n    * Otherwise \u2192 the last *n* elements via slicing.\n    \"\"\"\n    if n <= 0:\n        return []\n    if n >= len(lst):\n        return lst  # No copy \u2013 more efficient\n    return lst[-n:]\n"
+          }
+        ],
+        "exploit_scenarios": [
+          {
+            "vulnerability": "None (logic\u2011only function)",
+            "scenario": "The function only performs list slicing; it does not execute code, access external resources, or mutate shared state. Therefore there is no realistic attack vector such as code injection, denial\u2011of\u2011service, or data leakage.",
+            "impact": "N/A \u2013 no security impact."
+          }
+        ],
+        "root_cause_analysis": [
+          {
+            "issue": "Off\u2011by\u2011one error",
+            "root_cause": "The developer attempted to compute the start index manually (`len(lst) - n + 1`) and mis\u2011applied Python's zero\u2011based slicing semantics. In Python, the slice end index is exclusive, so adding `+1` skips the first desired element.",
+            "prevention": "Prefer idiomatic slicing (`lst[-n:]`) or use clear arithmetic (`len(lst) - n`). Write unit tests covering boundary values (e.g., n = 1, n = len(lst), n = len(lst)-1) to catch off\u2011by\u2011one bugs early."
+          },
+          {
+            "issue": "Unnecessary shallow copy for large *n*",
+            "root_cause": "The developer likely copied the list out of habit to avoid accidental mutation of the caller\u2019s data, but the function never mutates the list. This defensive copy adds overhead without benefit.",
+            "prevention": "Define the function\u2019s contract explicitly (e.g., \"returns a view of the original list\"), and document that the returned list should not be mutated if the caller needs immutability. Use static analysis or code\u2011review checklists to flag needless copies."
+          }
+        ]
+      },
+      "recommendations": [
+        "Fix bug: Off\u2011by\u2011one error in the slice. The expression `lst[len(lst)-n+1:]` skips the first element of the desired result, returning only n\u20111 items. The correct slice is `lst[len(lst)-n:]` or simply `lst[-n:]`.",
+        "Fix bug: When `n` is larger than the list length the function returns a shallow copy (`lst[:]`). This is correct but unnecessary copying; returning the original list would be more efficient.",
+        "Security: The function only performs list slicing and does not execute code, access external resources, or modify mutable state, so there are no apparent security vulnerabilities.",
+        "Style: Function signature lacks type annotations (e.g., `def get_last_n_items(lst: List[Any], n: int) -> List[Any]:`).",
+        "Style: Docstring does not document parameters or return type according to common conventions (e.g., NumPy or Google style).",
+        "Style: Using `len(lst)-n+1` is harder to read than the idiomatic `lst[-n:]`.",
+        "Style: Returning `lst[:]` creates a copy even when the caller could safely receive the original list.",
+        "Performance: When `n >= len(lst)` the function returns a full copy of the list. Returning the original list would avoid the O(len(lst)) copy.",
+        "Performance: Computing `len(lst)-n+1` adds extra arithmetic; using negative indexing (`lst[-n:]`) is both clearer and marginally faster."
+      ],
+      "errors": null,
+      "timestamp": "2026-10-20T07:03:42.163408+00:00"
+    }
+  },
+  {
+    "name": "JavaScript SQL Injection Vulnerability",
+    "report": {
+      "status": "reviewed",
+      "input_summary": {
+        "language": "javascript",
+        "line_count": 42,
+        "non_empty_line_count": 37,
+        "has_functions": false,
+        "has_classes": false
+      },
+      "findings": {
+        "bugs": [
+          "If `req.query.username` is undefined, the generated SQL becomes `SELECT * FROM users WHERE username = 'undefined'` which may return unintended results.",
+          "The MySQL connection is created with `createConnection` but there is no error handling for connection failures; the server will crash if the DB is unreachable.",
+          "The `/api/login` endpoint returns the entire user record (including the password) in the JSON response, leaking sensitive data."
+        ],
+        "security_issues": [
+          "SQL Injection: both `/api/users` and `/api/login` build queries by concatenating user\u2011supplied values directly into the SQL string.",
+          "Passwords are stored and compared in plaintext; this is insecure and violates best practices for credential storage.",
+          "Database credentials (`root` / `password123`) are hard\u2011coded in source code, exposing them if the repo is leaked.",
+          "No rate limiting or account lockout on the login endpoint, making it vulnerable to brute\u2011force attacks.",
+          "No HTTPS enforcement or secure cookie handling; authentication data is sent in clear text over the network.",
+          "The login response includes the full user record (including the password hash/plaintext), exposing it to the client.",
+          "No input validation or sanitisation for `username`, `user`, and `pass` fields."
+        ],
+        "style_issues": [
+          "Mixed use of string concatenation and template literals; choose one style for consistency.",
+          "Variable names are inconsistent (`user`/`pass` vs `username`), making the code harder to read.",
+          "Hard\u2011coded configuration values should be moved to environment variables or a config file.",
+          "Missing JSDoc/comments describing the purpose of each route and the expected request payload.",
+          "The `express.json()` middleware is added globally; consider limiting it to routes that need it.",
+          "The `app.listen` callback uses `console.log` directly; a proper logger would be preferable."
+        ],
+        "performance_issues": [
+          "A single MySQL connection (`createConnection`) is shared for all requests; under load this can become a bottleneck. Use a connection pool (`createPool`).",
+          "`SELECT *` retrieves all columns for every user; this can be wasteful. Select only the needed columns (e.g., `id, username`).",
+          "No indexing hints are shown, but searching by `username` without an index could cause full table scans on large tables."
+        ],
+        "overall_quality": "poor",
+        "summary": "The code contains critical security flaws (SQL injection, plaintext passwords, hard\u2011coded credentials) and functional bugs (lack of DB error handling, leaking sensitive data). Style is inconsistent and configuration is not externalised. Performance suffers from using a single DB connection and unoptimized queries. Immediate remediation is required: switch to parameterised queries or an ORM, hash passwords, move secrets to environment variables, use a connection pool, and clean up the code style and error handling."
+      },
+      "severity": "critical",
+      "deep_analysis": {
+        "raw_response": "```json\n{\n  \"fix_suggestions\": [\n    {\n      \"issue\": \"SQL Injection in `/api/users` and `/api/login` \u2013 queries are built by string concatenation.\",\n      \"fix\": \"Use parameterised (prepared) statements provided by the mysql library. This separates code from data and prevents injection.\",\n      \"corrected_code\": \"```javascript\\n// --- common DB helper ---\\nfunction query(sql, params) {\\n  return new Promise((resolve, reject) => {\\n    db.query(sql, params, (err, results) => {\\n      if (err) return reject(err);\\n      resolve(results);\\n    });\\n  });\\n}\\n\\n// GET /api/users\\napp.get('/api/users', async (req, res) => {\\n  const username = req.query.username;\\n  if (!username) return res.status(400).json({ error: 'username is required' });\\n  try {\\n    const results = await query('SELECT id, username, email FROM users WHERE username = ?', [username]);\\n    res.json(results);\\n  } catch (err) {\\n    console.error(err);\\n    res.status(500).send('Database error');\\n  }\\n});\\n\\n// POST /api/login\\napp.post('/api/login', async (req, res) => {\\n  const { user, pass } = req.body;\\n  if (!user || !pass) return res.status(400).json({ error: 'user and pass required' });\\n  try {\\n    const rows = await query('SELECT id, username, password FROM users WHERE username = ?', [user]);\\n    if (rows.length === 0) return res.status(401).send('Invalid credentials');\\n    const storedHash = rows[0].password;\\n    const match = await bcrypt.compare(pass, storedHash);\\n    if (!match) return res.status(401).send('Invalid credentials');\\n    // generate a JWT or session token here (omitted for brevity)\\n    res.json({ message: 'Login successful', user: { id: rows[0].id, username: rows[0].username } });\\n  } catch (err) {\\n    console.error(err);\\n    res.status(500).send('Login failed');\\n  }\\n});\\n```\"\n    },\n    {\n      \"issue\": \"Passwords stored and compared in plaintext.\",\n      \"fix\": \"Hash passwords with a strong algorithm (e.g., bcrypt) when creating/updating users and compare hashes on login.\",\n      \"corrected_code\": \"```javascript\\nconst bcrypt = require('bcrypt');\\nconst SALT_ROUNDS = 12;\\n\\n// Example user\u2011creation endpoint (not in original code)\\napp.post('/api/register', async (req, res) => {\\n  const { username, password, email } = req.body;\\n  const hash = await bcrypt.hash(password, SALT_ROUNDS);\\n  try {\\n    await query('INSERT INTO users (username, password, email) VALUES (?, ?, ?)', [username, hash, email]);\\n    res.status(201).json({ message: 'User created' });\\n  } catch (err) {\\n    console.error(err);\\n    res.status(500).send('Registration error');\\"
+      },
+      "recommendations": [
+        "Fix bug: If `req.query.username` is undefined, the generated SQL becomes `SELECT * FROM users WHERE username = 'undefined'` which may return unintended results.",
+        "Fix bug: The MySQL connection is created with `createConnection` but there is no error handling for connection failures; the server will crash if the DB is unreachable.",
+        "Fix bug: The `/api/login` endpoint returns the entire user record (including the password) in the JSON response, leaking sensitive data.",
+        "Security: SQL Injection: both `/api/users` and `/api/login` build queries by concatenating user\u2011supplied values directly into the SQL string.",
+        "Security: Passwords are stored and compared in plaintext; this is insecure and violates best practices for credential storage.",
+        "Security: Database credentials (`root` / `password123`) are hard\u2011coded in source code, exposing them if the repo is leaked.",
+        "Security: No rate limiting or account lockout on the login endpoint, making it vulnerable to brute\u2011force attacks.",
+        "Security: No HTTPS enforcement or secure cookie handling; authentication data is sent in clear text over the network.",
+        "Security: The login response includes the full user record (including the password hash/plaintext), exposing it to the client.",
+        "Security: No input validation or sanitisation for `username`, `user`, and `pass` fields.",
+        "Style: Mixed use of string concatenation and template literals; choose one style for consistency.",
+        "Style: Variable names are inconsistent (`user`/`pass` vs `username`), making the code harder to read.",
+        "Style: Hard\u2011coded configuration values should be moved to environment variables or a config file.",
+        "Style: Missing JSDoc/comments describing the purpose of each route and the expected request payload.",
+        "Style: The `express.json()` middleware is added globally; consider limiting it to routes that need it.",
+        "Style: The `app.listen` callback uses `console.log` directly; a proper logger would be preferable.",
+        "Performance: A single MySQL connection (`createConnection`) is shared for all requests; under load this can become a bottleneck. Use a connection pool (`createPool`).",
+        "Performance: `SELECT *` retrieves all columns for every user; this can be wasteful. Select only the needed columns (e.g., `id, username`).",
+        "Performance: No indexing hints are shown, but searching by `username` without an index could cause full table scans on large tables."
+      ],
+      "errors": [
+        "Deep analysis response could not be parsed as JSON."
+      ],
+      "timestamp": "2026-10-20T07:03:47.909256+00:00"
+    }
+  },
+  {
+    "name": "Python Clean Code (Stack Implementation)",
+    "report": {
+      "status": "reviewed",
+      "input_summary": {
+        "language": "python",
+        "line_count": 75,
+        "non_empty_line_count": 55,
+        "has_functions": true,
+        "has_classes": true
+      },
+      "findings": {
+        "bugs": [],
+        "security_issues": [],
+        "style_issues": [
+          "The type hint for the internal list uses the built\u2011in generic ``list[Any]`` which is fine for Python\u202f3.9+, but for compatibility with older versions you might prefer ``List[Any]`` from ``typing``.",
+          "The private attribute ``_items`` is mutable and can be accessed/modified from outside the class (e.g., ``stack._items.append(...)``).  Consider exposing a read\u2011only view or renaming it to ``__items`` to trigger name\u2011mangling if you want stricter encapsulation.",
+          "Add ``__len__`` (and optionally ``__iter__``) to make the stack behave more like a built\u2011in container; this is a style/convenience improvement, not a bug.",
+          "Docstrings are good, but the class could benefit from a short example usage in the module docstring for better documentation."
+        ],
+        "performance_issues": [],
+        "overall_quality": "good",
+        "summary": "The Stack implementation is functionally correct and uses an efficient list\u2011based storage with O(1) amortized operations. No functional bugs or security flaws are present. Minor style improvements include type\u2011hint compatibility, stronger encapsulation of the internal list, and adding container protocol methods for a more Pythonic interface. Performance is already optimal for typical stack usage."
+      },
+      "severity": "warning",
+      "deep_analysis": null,
+      "recommendations": [
+        "Style: The type hint for the internal list uses the built\u2011in generic ``list[Any]`` which is fine for Python\u202f3.9+, but for compatibility with older versions you might prefer ``List[Any]`` from ``typing``.",
+        "Style: The private attribute ``_items`` is mutable and can be accessed/modified from outside the class (e.g., ``stack._items.append(...)``).  Consider exposing a read\u2011only view or renaming it to ``__items`` to trigger name\u2011mangling if you want stricter encapsulation.",
+        "Style: Add ``__len__`` (and optionally ``__iter__``) to make the stack behave more like a built\u2011in container; this is a style/convenience improvement, not a bug.",
+        "Style: Docstrings are good, but the class could benefit from a short example usage in the module docstring for better documentation."
+      ],
+      "errors": null,
+      "timestamp": "2026-10-20T07:03:50.189282+00:00"
+    }
+  },
+  {
+    "name": "Empty Input (Edge Case)",
+    "report": {
+      "status": "error",
+      "input_summary": {
+        "language": "unknown",
+        "line_count": 0,
+        "non_empty_line_count": 0,
+        "has_functions": false,
+        "has_classes": false
+      },
+      "findings": null,
+      "severity": "info",
+      "deep_analysis": null,
+      "recommendations": [],
+      "errors": [
+        "Input validation failed: code is empty."
+      ],
+      "timestamp": "2026-10-20T07:03:50.191439+00:00"
+    }
+  },
+  {
+    "name": "Non-Code Input \u2014 A Poem (Edge Case)",
+    "report": {
+      "status": "error",
+      "input_summary": {
+        "language": "unknown",
+        "line_count": 0,
+        "non_empty_line_count": 0,
+        "has_functions": false,
+        "has_classes": false
+      },
+      "findings": null,
+      "severity": "info",
+      "deep_analysis": null,
+      "recommendations": [],
+      "errors": [
+        "Input validation failed: the provided text does not appear to be source code."
+      ],
+      "timestamp": "2026-10-20T07:03:50.193131+00:00"
+    }
+  },
+  {
+    "name": "Obfuscated Python One-Liner (Edge Case)",
+    "report": {
+      "status": "reviewed",
+      "input_summary": {
+        "language": "python",
+        "line_count": 1,
+        "non_empty_line_count": 1,
+        "has_functions": false,
+        "has_classes": false
+      },
+      "findings": {
+        "bugs": [],
+        "security_issues": [],
+        "style_issues": [
+          "Uses a one\u2011liner with nested lambda expressions, making the code extremely hard to read and maintain.",
+          "Violates PEP\u202f8: no spaces around operators, line exceeds recommended length, and the function name is missing (code is just a script).",
+          "Magic numbers (1, 101, 15, 3, 5) are hard\u2011coded without explanation.",
+          "Uses a list comprehension solely for its side\u2011effect (printing), which is unnecessary; a generator expression would be more appropriate.",
+          "The outer lambda is used only to create a temporary scope; a regular function or a simple loop would be clearer.",
+          "No docstring or comment explaining the purpose of the code."
+        ],
+        "performance_issues": [
+          "Creates an intermediate list of 100 strings before joining, which uses extra memory; a generator expression could avoid this allocation.",
+          "Nested ternary operators add slight overhead, but negligible for 100 iterations."
+        ],
+        "overall_quality": "needs_improvement",
+        "summary": "The snippet correctly implements FizzBuzz for numbers 1\u2011100 and has no functional bugs or security concerns. However, its use of nested lambdas, lack of readability, violation of PEP\u202f8 conventions, and unnecessary list creation make it poor in style and slightly sub\u2011optimal in performance. Refactoring to a clear loop or a generator expression with proper naming and documentation would greatly improve maintainability and adherence to best practices."
+      },
+      "severity": "warning",
+      "deep_analysis": null,
+      "recommendations": [
+        "Style: Uses a one\u2011liner with nested lambda expressions, making the code extremely hard to read and maintain.",
+        "Style: Violates PEP\u202f8: no spaces around operators, line exceeds recommended length, and the function name is missing (code is just a script).",
+        "Style: Magic numbers (1, 101, 15, 3, 5) are hard\u2011coded without explanation.",
+        "Style: Uses a list comprehension solely for its side\u2011effect (printing), which is unnecessary; a generator expression would be more appropriate.",
+        "Style: The outer lambda is used only to create a temporary scope; a regular function or a simple loop would be clearer.",
+        "Style: No docstring or comment explaining the purpose of the code.",
+        "Performance: Creates an intermediate list of 100 strings before joining, which uses extra memory; a generator expression could avoid this allocation.",
+        "Performance: Nested ternary operators add slight overhead, but negligible for 100 iterations."
+      ],
+      "errors": null,
+      "timestamp": "2026-10-20T07:03:51.861163+00:00"
+    }
+  }
+]

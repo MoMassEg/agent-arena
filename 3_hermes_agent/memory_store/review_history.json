@@ -1,0 +1,209 @@
+{
+  "session_count": 7,
+  "review_history": [
+    {
+      "test_name": "Python Off-by-One Error",
+      "language": "python",
+      "timestamp": "2026-10-20T06:51:18.073268+00:00",
+      "session": 1,
+      "severity": "clean",
+      "issue_count": 0
+    },
+    {
+      "test_name": "JavaScript SQL Injection Vulnerability",
+      "language": "javascript",
+      "timestamp": "2026-10-20T06:51:22.578479+00:00",
+      "session": 1,
+      "severity": "critical",
+      "issue_count": 3
+    },
+    {
+      "test_name": "Python Clean Code (Stack Implementation)",
+      "language": "python",
+      "timestamp": "2026-10-20T06:51:26.930610+00:00",
+      "session": 1,
+      "severity": "clean",
+      "issue_count": 0
+    },
+    {
+      "test_name": "Empty Input (Edge Case)",
+      "language": "unknown",
+      "timestamp": "2026-10-20T06:51:32.322215+00:00",
+      "session": 1,
+      "severity": "clean",
+      "issue_count": 0
+    },
+    {
+      "test_name": "Non-Code Input \u2014 A Poem (Edge Case)",
+      "language": "unknown",
+      "timestamp": "2026-10-20T06:51:36.956313+00:00",
+      "session": 1,
+      "severity": "info",
+      "issue_count": 1
+    },
+    {
+      "test_name": "Obfuscated Python One-Liner (Edge Case)",
+      "language": "python",
+      "timestamp": "2026-10-20T06:51:41.222981+00:00",
+      "session": 1,
+      "severity": "clean",
+      "issue_count": 0
+    },
+    {
+      "test_name": "User Submission",
+      "language": "javascript",
+      "timestamp": "2026-10-20 10:11:15",
+      "severity": "warning",
+      "issue_count": 1,
+      "findings": [
+        {
+          "rule": "var-usage",
+          "severity": "warning",
+          "line": 1,
+          "message": "Use 'let' or 'const' instead of 'var' for proper block scoping."
+        }
+      ],
+      "review": "## \ud83d\udccb Review Summary\n| Aspect | Assessment |\n|--------|------------|\n| **Static finding** | `var` usage warning |\n| **Additional issues** | Unused global variable, missing strict mode / module encapsulation, lack of type safety (if using TypeScript), no documentation |\n| **Overall quality** | **Warni..."
+    },
+    {
+      "test_name": "Web Dashboard Run",
+      "language": "javascript",
+      "timestamp": "2026-10-20 10:12:52",
+      "severity": "critical",
+      "issue_count": 3,
+      "findings": [
+        {
+          "rule": "sql-concatenation",
+          "severity": "critical",
+          "line": 16,
+          "message": "SQL query built via string concatenation \u2014 vulnerable to SQL injection."
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 10,
+          "message": "Hardcoded password detected"
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 28,
+          "message": "Hardcoded password detected"
+        }
+      ],
+      "review": "# Code Review \u2013 Express\u202f+\u202fMySQL API  \n\n## 1. Explanation of the Static Findings  \n\n| # | Rule | Line | Plain\u2011language explanation |\n|---|------|------|----------------------------|\n| 1 | **sql\u2011concatenation** (critical) | 16 | The SELECT statement is built by concatenating the raw `username` query\u2011p..."
+    },
+    {
+      "test_name": "Web Dashboard Run",
+      "language": "javascript",
+      "timestamp": "2026-10-20 10:15:06",
+      "severity": "critical",
+      "issue_count": 3,
+      "findings": [
+        {
+          "rule": "sql-concatenation",
+          "severity": "critical",
+          "line": 16,
+          "message": "SQL query built via string concatenation \u2014 vulnerable to SQL injection."
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 10,
+          "message": "Hardcoded password detected"
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 28,
+          "message": "Hardcoded password detected"
+        }
+      ],
+      "review": "# Code Review \u2013 Express\u202f+\u202fMySQL API  \n\n## 1. Explanation of the Static Findings  \n\n| # | Location | Finding | Plain\u2011language explanation |\n|---|----------|---------|----------------------------|\n| 1 | **Line\u202f16** (`app.get('/api/users'\u2026)` ) | **SQL\u2011concatenation (critical)** | The query string is bu..."
+    },
+    {
+      "test_name": "Web Dashboard Run",
+      "language": "javascript",
+      "timestamp": "2026-10-20 10:24:36",
+      "severity": "critical",
+      "issue_count": 3,
+      "findings": [
+        {
+          "rule": "sql-concatenation",
+          "severity": "critical",
+          "line": 16,
+          "message": "SQL query built via string concatenation \u2014 vulnerable to SQL injection."
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 10,
+          "message": "Hardcoded password detected"
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 28,
+          "message": "Hardcoded password detected"
+        }
+      ],
+      "review": "## \ud83d\udccb Review Summary\n| Aspect | Rating |\n|--------|--------|\n| **Overall Code Quality** | **Critical** \u2013 the code contains **SQL\u2011injection**, **hard\u2011coded credentials**, and **plain\u2011text password handling**. These are exploitable vulnerabilities that must be fixed before any production use. |\n\n---\n\n#..."
+    },
+    {
+      "test_name": "Web Dashboard Run",
+      "language": "javascript",
+      "timestamp": "2026-10-27 09:13:34",
+      "severity": "critical",
+      "issue_count": 3,
+      "findings": [
+        {
+          "rule": "sql-concatenation",
+          "severity": "critical",
+          "line": 16,
+          "message": "SQL query built via string concatenation \u2014 vulnerable to SQL injection."
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 10,
+          "message": "Hardcoded password detected"
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 28,
+          "message": "Hardcoded password detected"
+        }
+      ],
+      "review": "## 1\ufe0f\u20e3 Explanation of the Static Findings  \n\n| # | Rule | Line | What the tool saw | Why it matters |\n|---|------|------|-------------------|----------------|\n| 1 | **sql\u2011concatenation** | 16 | The SELECT statement is built by concatenating `username` directly into the query string. | An attacker ca..."
+    },
+    {
+      "test_name": "Web Dashboard Run",
+      "language": "javascript",
+      "timestamp": "2026-10-27 09:27:28",
+      "severity": "critical",
+      "issue_count": 3,
+      "findings": [
+        {
+          "rule": "sql-concatenation",
+          "severity": "critical",
+          "line": 16,
+          "message": "SQL query built via string concatenation \u2014 vulnerable to SQL injection."
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 10,
+          "message": "Hardcoded password detected"
+        },
+        {
+          "rule": "hardcoded-credential",
+          "severity": "critical",
+          "line": 28,
+          "message": "Hardcoded password detected"
+        }
+      ],
+      "review": "## 1\ufe0f\u20e3 Explanation of the Static Findings  \n\n| # | Rule | Line | Plain\u2011language explanation |\n|---|------|------|----------------------------|\n| 1 | **sql\u2011concatenation** (critical) | 16 | The SELECT statement is built by concatenating the `username` query\u2011string directly into the SQL text. An attac..."
+    }
+  ]
+}

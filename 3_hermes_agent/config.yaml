@@ -1,0 +1,20 @@
+agent:
+  name: "CodeReviewBot"
+  description: "An autonomous code review agent that analyzes code for bugs, security issues, and style violations"
+  model: "qwen/qwen3.8-27b"
+  
+provider:
+  name: "groq"
+  api_key: "${GROQ_API_KEY}"
+  base_url: "https://api.groq.com/openai/v1"
+
+memory:
+  enabled: true
+  type: "persistent"
+  storage: "./memory_store"
+  
+features:
+  persistent_memory: true   # Unique feature: remembers past reviews across sessions
+  scheduled_tasks: true     # Unique feature: recurring code review scans
+  
+skills_dir: "./skills"

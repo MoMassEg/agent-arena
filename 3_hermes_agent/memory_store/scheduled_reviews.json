@@ -1,0 +1,19 @@
+{
+  "reviews": [
+    {
+      "file": "example.py",
+      "language": "python",
+      "timestamp": "2026-10-20T06:52:45.936919+00:00",
+      "issue_count": 4,
+      "severity": "critical",
+      "findings_summary": {
+        "critical": 1,
+        "warning": 1,
+        "info": 2
+      },
+      "llm_review_excerpt": "**Critical:** `fetch_data` contains a hardcoded API key (line 7). This is a severe security vulnerability. Immediately rotate the key and load credentials from environment variables or a secure vault.\n\n**Bugs:**\n1. `calculate_average` will raise a `ZeroDivisionError` if `numbers` is empty. Add a guard clause: `if not numbers: return 0` or raise a custom error.\n2. `fetch_data` uses a bare `except:` (line 10) with an empty `pass` block. This silently swallows all exceptions, including `KeyboardInt"
+    }
+  ],
+  "last_scan": "2026-10-20T06:52:45.936919+00:00",
+  "total_scans": 1
+}

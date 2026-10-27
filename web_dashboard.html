@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent Comparison Lab — Interactive Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <style>
+    .tab-active {
+      border-bottom: 3px solid #2563EB;
+      color: #1D4ED8;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">🧪</span>
+        <div>
+          <h1 class="text-xl font-bold text-slate-900">AI Agent Comparison Lab</h1>
+          <p class="text-xs text-slate-500">Evaluating LangGraph vs. n8n vs. Hermes Agent using Groq LPU</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="n8nStatusBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Checking n8n...
+        </span>
+        <a href="http://localhost:5678" target="_blank" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded-lg flex items-center gap-1 transition">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open n8n UI (:5678)
+        </a>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-6 flex gap-8 text-sm border-t border-slate-100">
+      <button onclick="switchTab('langgraph')" id="tabBtn-langgraph" class="py-3 px-1 tab-active flex items-center gap-2">
+        <i class="fa-brands fa-python text-blue-600"></i> Project 1: LangGraph Agent
+      </button>
+      <button onclick="switchTab('n8n')" id="tabBtn-n8n" class="py-3 px-1 text-slate-500 hover:text-slate-800 flex items-center gap-2">
+        <i class="fa-solid fa-diagram-project text-emerald-600"></i> Project 2: n8n Workflow
+      </button>
+      <button onclick="switchTab('hermes')" id="tabBtn-hermes" class="py-3 px-1 text-slate-500 hover:text-slate-800 flex items-center gap-2">
+        <i class="fa-solid fa-robot text-purple-600"></i> Project 3: Hermes Agent
+      </button>
+      <button onclick="switchTab('matrix')" id="tabBtn-matrix" class="py-3 px-1 text-slate-500 hover:text-slate-800 flex items-center gap-2">
+        <i class="fa-solid fa-table-columns text-slate-600"></i> Comparison Matrix
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-6 py-6">
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: LANGGRAPH AGENT (FRONTEND)                                   -->
+    <!-- =================================================================== -->
+    <section id="tab-langgraph">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Input & Config -->
+        <div class="lg:col-span-1 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-code text-blue-600"></i> Input Code
+            </h2>
+            <span class="text-xs bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-semibold border border-blue-200">LangGraph</span>
+          </div>
+
+          <!-- Benchmark Selector -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Load Benchmark Preset</label>
+            <select id="lgPresetSelect" onchange="loadPreset('lg')" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500">
+              <option value="">(Custom Code)</option>
+            </select>
+          </div>
+
+          <!-- Language & Model -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Language</label>
+              <select id="lgLanguage" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-slate-50">
+                <option value="auto">Auto-detect</option>
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Model (Groq)</label>
+              <select id="lgModel" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-slate-50">
+                <option value="openai/gpt-oss-120b">gpt-oss-120b</option>
+                <option value="qwen/qwen3.8-27b">qwen3.8-27b</option>
+                <option value="openai/gpt-oss-20b">gpt-oss-20b</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Editor -->
+          <div class="flex-1 flex flex-col">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Source Code</label>
+            <textarea id="lgCode" rows="11" class="w-full p-3 font-mono text-xs bg-slate-900 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="// Paste or type code here..."></textarea>
+          </div>
+
+          <button onclick="runLangGraphReview()" id="lgRunBtn" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-play"></i> Run LangGraph Pipeline
+          </button>
+        </div>
+
+        <!-- Right: Results & Graph -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+
+          <!-- Pipeline Visualizer -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">LangGraph Execution Flow</h3>
+            <div class="grid grid-cols-4 gap-2 text-center text-xs">
+              <div id="step-node-1" class="p-2.5 bg-slate-100 border border-slate-200 rounded-lg">
+                <div class="font-bold text-slate-700">1. Input Processor</div>
+                <div class="text-[10px] text-slate-500">AST & Guards</div>
+              </div>
+              <div id="step-node-2" class="p-2.5 bg-slate-100 border border-slate-200 rounded-lg">
+                <div class="font-bold text-slate-700">2. LLM Analyzer</div>
+                <div class="text-[10px] text-slate-500">Groq Reasoning</div>
+              </div>
+              <div id="step-node-3" class="p-2.5 bg-slate-100 border border-slate-200 rounded-lg">
+                <div class="font-bold text-slate-700">3. Deep Analyzer</div>
+                <div class="text-[10px] text-slate-500">(Conditional: Critical)</div>
+              </div>
+              <div id="step-node-4" class="p-2.5 bg-slate-100 border border-slate-200 rounded-lg">
+                <div class="font-bold text-slate-700">4. Output Validator</div>
+                <div class="text-[10px] text-slate-500">Report Synthesis</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Results Card -->
+          <div id="lgResultsContainer" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex-1">
+            <div class="text-center py-16 text-slate-400" id="lgEmptyPlaceholder">
+              <i class="fa-solid fa-diagram-project text-4xl mb-3 text-slate-300"></i>
+              <p class="text-sm font-medium">Select a test preset and click "Run LangGraph Pipeline" to see results.</p>
+            </div>
+
+            <div id="lgResultsContent" class="hidden flex flex-col gap-4">
+              <!-- Header Badges -->
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                  <span id="lgSeverityBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase"></span>
+                  <span id="lgStatusBadge" class="text-xs text-slate-500"></span>
+                </div>
+                <span id="lgTiming" class="text-xs text-slate-400"></span>
+              </div>
+
+              <!-- Summary -->
+              <div>
+                <h4 class="text-xs font-semibold text-slate-500 uppercase">Assessment</h4>
+                <p id="lgSummaryText" class="text-sm text-slate-700 mt-1"></p>
+              </div>
+
+              <!-- Findings Grid -->
+              <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 bg-red-50 rounded-lg border border-red-100">
+                  <h5 class="text-xs font-bold text-red-800 mb-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bug"></i> Bugs
+                  </h5>
+                  <ul id="lgBugsList" class="text-xs text-red-700 space-y-1 list-disc list-inside"></ul>
+                </div>
+                <div class="p-3 bg-amber-50 rounded-lg border border-amber-100">
+                  <h5 class="text-xs font-bold text-amber-800 mb-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved"></i> Security
+                  </h5>
+                  <ul id="lgSecList" class="text-xs text-amber-700 space-y-1 list-disc list-inside"></ul>
+                </div>
+              </div>
+
+              <!-- Deep Analysis (if critical) -->
+              <div id="lgDeepCard" class="hidden p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h5 class="text-xs font-bold text-purple-900 mb-2 flex items-center gap-1.5">
+                  <i class="fa-solid fa-skull-crossbones"></i> Deep Exploit & Root Cause Analysis (Node 3)
+                </h5>
+                <div id="lgDeepContent" class="text-xs text-purple-800 space-y-2"></div>
+              </div>
+
+              <!-- Recommendations -->
+              <div>
+                <h4 class="text-xs font-semibold text-slate-500 uppercase mb-2">Recommendations</h4>
+                <ul id="lgRecsList" class="text-xs text-slate-700 space-y-1 list-decimal list-inside"></ul>
+              </div>
+
+              <!-- Raw State Toggle -->
+              <details class="text-xs text-slate-500 mt-2">
+                <summary class="cursor-pointer font-medium hover:text-slate-800">Inspect LangGraph Raw State</summary>
+                <pre id="lgRawState" class="mt-2 p-3 bg-slate-900 text-slate-200 rounded-lg overflow-x-auto text-[11px]"></pre>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: N8N VISUAL WORKFLOW HUB                                      -->
+    <!-- =================================================================== -->
+    <section id="tab-n8n" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-diagram-project text-emerald-600"></i> n8n Webhook Tester
+            </h2>
+            <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-semibold border border-emerald-200">n8n Workflow</span>
+          </div>
+
+          <p class="text-xs text-slate-600">
+            Send test requests directly to the n8n webhook endpoint running in your local Docker instance.
+          </p>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Webhook Endpoint URL</label>
+            <input type="text" id="n8nWebhookUrl" value="http://localhost:5678/webhook/code-review" class="w-full text-xs p-2 border border-slate-300 rounded-lg font-mono bg-slate-50">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Load Preset Payload</label>
+            <select id="n8nPresetSelect" onchange="loadPreset('n8n')" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-slate-50">
+              <option value="">(Custom Payload)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">JSON Payload</label>
+            <textarea id="n8nPayload" rows="8" class="w-full p-2.5 font-mono text-xs bg-slate-900 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+          </div>
+
+          <button onclick="testN8NWebhook()" id="n8nSendBtn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Send to n8n Webhook
+          </button>
+        </div>
+
+        <div class="lg:col-span-2 flex flex-col gap-6">
+          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+              <i class="fa-solid fa-info-circle text-blue-600"></i> How to Use the n8n Visual Workflow
+            </h3>
+            <ol class="text-xs text-slate-600 space-y-2 list-decimal list-inside">
+              <li>Open <a href="http://localhost:5678" target="_blank" class="text-emerald-600 underline font-semibold">http://localhost:5678</a> in your browser.</li>
+              <li>Log in or create a local admin account.</li>
+              <li>Go to <strong>Workflows</strong> &rarr; click <strong>...</strong> (top right) &rarr; select <strong>Import from File</strong>.</li>
+              <li>Select <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">2_n8n_agent/workflow.json</code>.</li>
+              <li>Toggle the workflow to <strong>Active</strong>.</li>
+            </ol>
+          </div>
+
+          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex-1">
+            <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Webhook Response Output</h4>
+            <pre id="n8nResponse" class="p-4 bg-slate-900 text-slate-100 rounded-lg text-xs overflow-x-auto min-h-[220px]">Click "Send to n8n Webhook" to test response...</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: HERMES AUTONOMOUS AGENT                                      -->
+    <!-- =================================================================== -->
+    <section id="tab-hermes" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-robot text-purple-600"></i> Hermes Agent
+            </h2>
+            <span class="text-xs bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded-full font-semibold border border-purple-200">Autonomous</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Load Preset</label>
+            <select id="hPresetSelect" onchange="loadPreset('h')" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-slate-50">
+              <option value="">(Custom Code)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Language</label>
+              <select id="hLanguage" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-slate-50">
+                <option value="auto">Auto</option>
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Model</label>
+              <select id="hModel" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-slate-50">
+                <option value="openai/gpt-oss-120b">gpt-oss-120b</option>
+                <option value="qwen/qwen3.8-27b">qwen3.8-27b</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex-1 flex flex-col">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Source Code</label>
+            <textarea id="hCode" rows="9" class="w-full p-3 font-mono text-xs bg-slate-900 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="// Code for Hermes agent..."></textarea>
+          </div>
+
+          <button onclick="runHermesReview()" id="hRunBtn" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-sm transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-play"></i> Run Hermes Autonomous Review
+          </button>
+
+          <div class="flex gap-2">
+            <button onclick="triggerScheduledScan()" class="flex-1 py-1.5 text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold rounded border border-amber-300 transition">
+              <i class="fa-solid fa-clock"></i> Run Folder Scan
+            </button>
+            <button onclick="clearHermesMemory()" class="py-1.5 px-3 text-xs bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 font-semibold rounded border border-slate-200 transition">
+              <i class="fa-solid fa-trash"></i> Clear Memory
+            </button>
+          </div>
+        </div>
+
+        <div class="lg:col-span-2 flex flex-col gap-6">
+          <!-- Static AST Skill Card -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <i class="fa-solid fa-wrench text-blue-600"></i> Custom Skill: static_code_analysis (AST & Regex)
+            </h3>
+            <div id="hStaticOutput" class="text-xs text-slate-600">Run review to inspect static tool output.</div>
+          </div>
+
+          <!-- Persistent Memory Alert & LLM Review -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex-1">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+              <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hermes Autonomous Output</h3>
+              <span id="hMemoryBadge" class="hidden text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-medium"></span>
+            </div>
+            <div id="hLlmOutput" class="text-xs text-slate-700 whitespace-pre-line leading-relaxed min-h-[160px]">
+              Hermes review output will appear here...
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: COMPARISON MATRIX                                            -->
+    <!-- =================================================================== -->
+    <section id="tab-matrix" class="hidden">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-900 mb-4">Architectural Comparison: Three Agent Paradigms</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                <th class="p-3">Dimension</th>
+                <th class="p-3 text-blue-700">1. LangGraph</th>
+                <th class="p-3 text-emerald-700">2. n8n</th>
+                <th class="p-3 text-purple-700">3. Hermes Agent</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-600">
+              <tr>
+                <td class="p-3 font-semibold text-slate-800">Control Level</td>
+                <td class="p-3"><strong>Maximum (10/10)</strong> — Every edge, node, schema typed in Python.</td>
+                <td class="p-3"><strong>Medium (7/10)</strong> — Visual wiring, JSON nodes, JS code blocks.</td>
+                <td class="p-3"><strong>Autonomous (5/10)</strong> — Goal-oriented ReAct loop.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-800">Development Speed</td>
+                <td class="p-3">2–3 hours (scaffolding, TypedDicts, reducers)</td>
+                <td class="p-3">30–45 mins (visual drag & drop)</td>
+                <td class="p-3"><strong>15–30 mins</strong> (drop skills in folder, set config.yaml)</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-800">Debuggability</td>
+                <td class="p-3"><strong>Best for devs:</strong> Standard Python tracebacks, pdb, unit tests.</td>
+                <td class="p-3"><strong>Best visual:</strong> Click any node to inspect in/out JSON payloads.</td>
+                <td class="p-3">Terminal logs; harder to debug nondeterministic loops.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-800">Unique Feature</td>
+                <td class="p-3">Cyclic graphs, human-in-the-loop, time travel state rollback.</td>
+                <td class="p-3">400+ SaaS connectors (Slack, Jira, GitHub, Sheets) out of the box.</td>
+                <td class="p-3"><strong>Persistent memory across sessions</strong> & scheduled task sweeps.</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold text-slate-800">Best Used For</td>
+                <td class="p-3 font-bold text-blue-800">Production CI/CD Pipelines</td>
+                <td class="p-3 font-bold text-emerald-800">Business & Enterprise Automation</td>
+                <td class="p-3 font-bold text-purple-800">Personal Coding Assistant & Watcher</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    let sampleCases = [];
+
+    // Tab Switching
+    function switchTab(tabId) {
+      ['langgraph', 'n8n', 'hermes', 'matrix'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`tabBtn-${t}`).className = 'py-3 px-1 text-slate-500 hover:text-slate-800 flex items-center gap-2';
+      });
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      document.getElementById(`tabBtn-${tabId}`).className = 'py-3 px-1 tab-active flex items-center gap-2';
+    }
+
+    // Load presets
+    async function init() {
+      try {
+        const res = await fetch('/api/samples');
+        sampleCases = await res.json();
+
+        ['lgPresetSelect', 'n8nPresetSelect', 'hPresetSelect'].forEach(selId => {
+          const sel = document.getElementById(selId);
+          sampleCases.forEach((c, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = `${c.name} (${c.type})`;
+            sel.appendChild(opt);
+          });
+        });
+
+        // Set default preset
+        if (sampleCases.length > 0) {
+          document.getElementById('lgPresetSelect').value = 0;
+          loadPreset('lg');
+          document.getElementById('hPresetSelect').value = 1;
+          loadPreset('h');
+        }
+
+        checkStatus();
+      } catch (e) {
+        console.error('Failed to init samples:', e);
+      }
+    }
+
+    function loadPreset(prefix) {
+      let selId = prefix === 'lg' ? 'lgPresetSelect' : (prefix === 'n8n' ? 'n8nPresetSelect' : 'hPresetSelect');
+      let val = document.getElementById(selId).value;
+      if (val === '') return;
+
+      let c = sampleCases[parseInt(val)];
+      if (!c) return;
+
+      if (prefix === 'lg') {
+        document.getElementById('lgCode').value = c.code || '';
+        document.getElementById('lgLanguage').value = c.language || 'auto';
+      } else if (prefix === 'h') {
+        document.getElementById('hCode').value = c.code || '';
+        document.getElementById('hLanguage').value = c.language || 'auto';
+      } else if (prefix === 'n8n') {
+        document.getElementById('n8nPayload').value = JSON.stringify({
+          code: c.code || '',
+          language: c.language || 'python'
+        }, null, 2);
+      }
+    }
+
+    async function checkStatus() {
+      try {
+        const r = await fetch('/api/status');
+        const d = await r.json();
+        const badge = document.getElementById('n8nStatusBadge');
+        if (d.n8n_online) {
+          badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
+          badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> n8n Online (:5678)';
+        } else {
+          badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200';
+          badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-400"></span> n8n Starting/Pulling...';
+        }
+      } catch (e) {}
+    }
+
+    // LangGraph Runner
+    async function runLangGraphReview() {
+      const code = document.getElementById('lgCode').value;
+      const language = document.getElementById('lgLanguage').value;
+      const model = document.getElementById('lgModel').value;
+      const btn = document.getElementById('lgRunBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing StateGraph...';
+
+      // Visual progress
+      ['step-node-1', 'step-node-2', 'step-node-3', 'step-node-4'].forEach(id => {
+        document.getElementById(id).className = 'p-2.5 bg-slate-100 border border-slate-200 rounded-lg';
+      });
+      document.getElementById('step-node-1').className = 'p-2.5 bg-blue-100 border border-blue-400 rounded-lg text-blue-900';
+
+      try {
+        const res = await fetch('/api/langgraph/review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, language, model })
+        });
+        const data = await res.json();
+
+        document.getElementById('step-node-2').className = 'p-2.5 bg-blue-100 border border-blue-400 rounded-lg text-blue-900';
+        if (data.severity === 'critical') {
+          document.getElementById('step-node-3').className = 'p-2.5 bg-purple-100 border border-purple-400 rounded-lg text-purple-900';
+        }
+        document.getElementById('step-node-4').className = 'p-2.5 bg-emerald-100 border border-emerald-400 rounded-lg text-emerald-900';
+
+        renderLangGraphResults(data);
+      } catch (err) {
+        alert('LangGraph execution failed: ' + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> Run LangGraph Pipeline';
+      }
+    }
+
+    function renderLangGraphResults(data) {
+      document.getElementById('lgEmptyPlaceholder').classList.add('hidden');
+      document.getElementById('lgResultsContent').classList.remove('hidden');
+
+      const sev = (data.severity || 'info').toLowerCase();
+      const badge = document.getElementById('lgSeverityBadge');
+      const colors = {
+        critical: 'bg-red-100 text-red-800 border border-red-300',
+        warning: 'bg-amber-100 text-amber-800 border border-amber-300',
+        clean: 'bg-emerald-100 text-emerald-800 border border-emerald-300',
+        info: 'bg-blue-100 text-blue-800 border border-blue-300'
+      };
+      badge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase ${colors[sev] || colors.info}`;
+      badge.textContent = sev.toUpperCase();
+
+      document.getElementById('lgStatusBadge').textContent = `Status: ${data.status} • Lines: ${data.input_summary?.line_count || 0}`;
+      document.getElementById('lgTiming').textContent = `Elapsed: ${data.execution_time_seconds || 0}s • ${data.model}`;
+
+      const findings = data.findings || {};
+      document.getElementById('lgSummaryText').textContent = findings.summary || (data.errors ? data.errors.join(', ') : 'Completed.');
+
+      // Bugs list
+      const bugsUl = document.getElementById('lgBugsList');
+      bugsUl.innerHTML = '';
+      (findings.bugs || []).forEach(b => {
+        let li = document.createElement('li');
+        li.textContent = b;
+        bugsUl.appendChild(li);
+      });
+      if ((findings.bugs || []).length === 0) bugsUl.innerHTML = '<li>None</li>';
+
+      // Security list
+      const secUl = document.getElementById('lgSecList');
+      secUl.innerHTML = '';
+      (findings.security_issues || []).forEach(s => {
+        let li = document.createElement('li');
+        li.textContent = s;
+        secUl.appendChild(li);
+      });
+      if ((findings.security_issues || []).length === 0) secUl.innerHTML = '<li>None</li>';
+
+      // Deep analysis card
+      const deepCard = document.getElementById('lgDeepCard');
+      const deepContent = document.getElementById('lgDeepContent');
+      if (data.deep_analysis) {
+        deepCard.classList.remove('hidden');
+        deepContent.innerHTML = '';
+        (data.deep_analysis.exploit_scenarios || []).forEach(e => {
+          deepContent.innerHTML += `<div><strong>🏴‍☠️ Exploit:</strong> ${e}</div>`;
+        });
+        (data.deep_analysis.fix_suggestions || []).forEach(f => {
+          deepContent.innerHTML += `<div><strong>🛠️ Fix:</strong> ${f}</div>`;
+        });
+      } else {
+        deepCard.classList.add('hidden');
+      }
+
+      // Recommendations
+      const recsUl = document.getElementById('lgRecsList');
+      recsUl.innerHTML = '';
+      (data.recommendations || []).forEach(r => {
+        let li = document.createElement('li');
+        li.textContent = r;
+        recsUl.appendChild(li);
+      });
+
+      // Raw state
+      document.getElementById('lgRawState').textContent = JSON.stringify(data, null, 2);
+    }
+
+    // Hermes Runner
+    async function runHermesReview() {
+      const code = document.getElementById('hCode').value;
+      const language = document.getElementById('hLanguage').value;
+      const model = document.getElementById('hModel').value;
+      const btn = document.getElementById('hRunBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Hermes Agent Reasoning...';
+
+      try {
+        const res = await fetch('/api/hermes/review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, language, model, name: 'Web Dashboard Run' })
+        });
+        const data = await res.json();
+
+        // Render Static AST
+        const staticDiv = document.getElementById('hStaticOutput');
+        const stAnalysis = data.static_analysis || {};
+        staticDiv.innerHTML = `
+          <div class="font-bold text-slate-800 mb-1">Total Issues Found: ${stAnalysis.summary?.total_issues || 0} (${stAnalysis.summary?.overall_severity || 'clean'})</div>
+        `;
+        (stAnalysis.findings || []).forEach(f => {
+          staticDiv.innerHTML += `<div class="text-[11px] text-slate-600">• <strong>[${f.severity.toUpperCase()}]</strong> Line ${f.line}: ${f.message}</div>`;
+        });
+
+        // Memory badge
+        const memBadge = document.getElementById('hMemoryBadge');
+        memBadge.classList.remove('hidden');
+        memBadge.textContent = `Persistent Memory: ${data.persistent_memory?.total_stored_reviews || 1} stored reviews`;
+
+        // LLM Review
+        document.getElementById('hLlmOutput').textContent = data.llm_review || 'No review returned.';
+      } catch (err) {
+        alert('Hermes review failed: ' + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> Run Hermes Autonomous Review';
+      }
+    }
+
+    async function clearHermesMemory() {
+      if (confirm('Clear Hermes persistent memory file?')) {
+        await fetch('/api/hermes/clear-memory', { method: 'POST' });
+        alert('Persistent memory cleared.');
+      }
+    }
+
+    async function triggerScheduledScan() {
+      const res = await fetch('/api/hermes/scan', { method: 'POST' });
+      const data = await res.json();
+      alert(`Scheduled scan completed: ${data.files_reviewed || 0} files reviewed.`);
+    }
+
+    // n8n Webhook Tester
+    async function testN8NWebhook() {
+      const url = document.getElementById('n8nWebhookUrl').value;
+      const payloadStr = document.getElementById('n8nPayload').value;
+      const out = document.getElementById('n8nResponse');
+      const btn = document.getElementById('n8nSendBtn');
+
+      let payload = {};
+      try {
+        payload = JSON.parse(payloadStr);
+      } catch (e) {
+        alert('Invalid JSON in payload box!');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Calling Webhook...';
+      out.textContent = 'Contacting ' + url + ' ...';
+
+      try {
+        const res = await fetch('/api/n8n/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, payload })
+        });
+        const data = await res.json();
+        out.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        out.textContent = 'Error: ' + err.message + '\nMake sure n8n is running and the workflow webhook is active.';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send to n8n Webhook';
+      }
+    }
+
+    // Polling status
+    setInterval(checkStatus, 5000);
+    window.onload = init;
+  </script>
+</body>
+</html>

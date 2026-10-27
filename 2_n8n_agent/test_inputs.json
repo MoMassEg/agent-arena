@@ -1,0 +1,58 @@
+{
+  "test_cases": [
+    {
+      "name": "Python Off-by-One Error",
+      "description": "A Python function intended to return the last N items from a list with an off-by-one error (uses lst[len(lst)-n+1:]).",
+      "expected_severity": "warning",
+      "payload": {
+        "code": "def get_last_n_items(lst, n):\n    \"\"\"Return the last n items from a list.\"\"\"\n    if n <= 0:\n        return []\n    if n >= len(lst):\n        return lst[:]\n    return lst[len(lst)-n+1:]\n\n# Example usage:\nresult = get_last_n_items([1, 2, 3, 4, 5], 3)\nprint(result)  # Expected: [3, 4, 5], Actual: [4, 5]",
+        "language": "python"
+      }
+    },
+    {
+      "name": "JavaScript SQL Injection Vulnerability",
+      "description": "Node.js Express endpoints concatenating user input directly into SQL queries with hardcoded credentials.",
+      "expected_severity": "critical",
+      "payload": {
+        "code": "const express = require('express');\nconst mysql = require('mysql');\n\nconst app = express();\napp.use(express.json());\n\nconst db = mysql.createConnection({\n  host: 'localhost',\n  user: 'root',\n  password: 'password123',\n  database: 'users_db'\n});\n\napp.get('/api/users', (req, res) => {\n  const username = req.query.username;\n  const query = \"SELECT * FROM users WHERE username = '\" + username + \"'\";\n  db.query(query, (err, results) => {\n    if (err) {\n      res.status(500).send('Database error');\n      return;\n    }\n    res.json(results);\n  });\n});\n\napp.listen(3000, () => console.log('Server running on port 3000'));",
+        "language": "javascript"
+      }
+    },
+    {
+      "name": "Python Clean Code (Stack Implementation)",
+      "description": "A clean, well-documented Stack class with type hints, custom exception, and proper docstrings.",
+      "expected_severity": "clean",
+      "payload": {
+        "code": "from typing import Any, Optional\n\nclass StackEmptyError(Exception):\n    \"\"\"Raised when an operation is attempted on an empty stack.\"\"\"\n    pass\n\nclass Stack:\n    \"\"\"A last-in, first-out (LIFO) data structure.\"\"\"\n    def __init__(self) -> None:\n        self._items: list[Any] = []\n\n    def push(self, item: Any) -> None:\n        self._items.append(item)\n\n    def pop(self) -> Any:\n        if self.is_empty():\n            raise StackEmptyError(\"Cannot pop from an empty stack.\")\n        return self._items.pop()\n\n    def is_empty(self) -> bool:\n        return len(self._items) == 0\n\n    def size(self) -> int:\n        return len(self._items)",
+        "language": "python"
+      }
+    },
+    {
+      "name": "Empty Input (Edge Case)",
+      "description": "An empty string submitted as code. The agent should gracefully detect and reject it without calling the LLM.",
+      "expected_severity": "clean",
+      "payload": {
+        "code": "",
+        "language": "unknown"
+      }
+    },
+    {
+      "name": "Non-Code Input — A Poem (Edge Case)",
+      "description": "A poem about programming submitted as code. Tests recognition of natural language prose.",
+      "expected_severity": "info",
+      "payload": {
+        "code": "Roses are red,\nViolets are blue,\nSemicolons are missing,\nAnd so is line two.\n\nThe compiler screams,\nThe runtime weeps,\nMy stack overflows,\nWhile the deadline creeps.",
+        "language": "unknown"
+      }
+    },
+    {
+      "name": "Obfuscated Python One-Liner (Edge Case)",
+      "description": "A valid but heavily obfuscated Python lambda FizzBuzz one-liner testing style and readability checks.",
+      "expected_severity": "warning",
+      "payload": {
+        "code": "fizzbuzz = lambda n: [('Fizz'*(i%3==0) + 'Buzz'*(i%5==0) or str(i)) for i in range(1, n+1)]\nprint(fizzbuzz(15))",
+        "language": "python"
+      }
+    }
+  ]
+}

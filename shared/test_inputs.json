@@ -1,0 +1,50 @@
+[
+  {
+    "id": "python_off_by_one",
+    "name": "Python Off-by-One Error",
+    "type": "normal",
+    "language": "python",
+    "code": "def get_last_n_items(lst, n):\n    \"\"\"Return the last n items from a list.\"\"\"\n    if n <= 0:\n        return []\n    if n >= len(lst):\n        return lst[:]\n    return lst[len(lst)-n+1:]\n\n# Example usage:\nresult = get_last_n_items([1, 2, 3, 4, 5], 3)\nprint(result)  # Expected: [3, 4, 5], Actual: [4, 5]",
+    "description": "A Python function intended to return the last N items from a list. Contains an off-by-one error: uses lst[len(lst)-n+1:] instead of the correct lst[len(lst)-n:] (or equivalently lst[-n:]). When called with n=3 on [1,2,3,4,5], it returns [4,5] instead of [3,4,5]."
+  },
+  {
+    "id": "js_sql_injection",
+    "name": "JavaScript SQL Injection Vulnerability",
+    "type": "normal",
+    "language": "javascript",
+    "code": "const express = require('express');\nconst mysql = require('mysql');\n\nconst app = express();\napp.use(express.json());\n\nconst db = mysql.createConnection({\n  host: 'localhost',\n  user: 'root',\n  password: 'password123',\n  database: 'users_db'\n});\n\napp.get('/api/users', (req, res) => {\n  const username = req.query.username;\n  const query = \"SELECT * FROM users WHERE username = '\" + username + \"'\";\n  db.query(query, (err, results) => {\n    if (err) {\n      res.status(500).send('Database error');\n      return;\n    }\n    res.json(results);\n  });\n});\n\napp.post('/api/login', (req, res) => {\n  const { user, pass } = req.body;\n  const query = `SELECT * FROM users WHERE username = '${user}' AND password = '${pass}'`;\n  db.query(query, (err, results) => {\n    if (err) {\n      res.status(500).send('Login failed');\n      return;\n    }\n    if (results.length > 0) {\n      res.json({ message: 'Login successful', user: results[0] });\n    } else {\n      res.status(401).send('Invalid credentials');\n    }\n  });\n});\n\napp.listen(3000, () => console.log('Server running on port 3000'));",
+    "description": "A Node.js/Express application with two endpoints that directly concatenate user input into SQL query strings, creating classic SQL injection vulnerabilities. Also contains hardcoded database credentials. An attacker could input something like ' OR '1'='1 to bypass authentication or exfiltrate data."
+  },
+  {
+    "id": "python_clean_code",
+    "name": "Python Clean Code (Stack Implementation)",
+    "type": "normal",
+    "language": "python",
+    "code": "from typing import Any, Optional\n\n\nclass StackEmptyError(Exception):\n    \"\"\"Raised when an operation is attempted on an empty stack.\"\"\"\n    pass\n\n\nclass Stack:\n    \"\"\"A last-in, first-out (LIFO) data structure.\n\n    This implementation uses a Python list as the underlying storage.\n    All operations (push, pop, peek) run in amortized O(1) time.\n\n    Attributes:\n        _items: Internal list storing the stack elements.\n    \"\"\"\n\n    def __init__(self) -> None:\n        \"\"\"Initialize an empty stack.\"\"\"\n        self._items: list[Any] = []\n\n    def push(self, item: Any) -> None:\n        \"\"\"Push an item onto the top of the stack.\n\n        Args:\n            item: The element to add to the stack.\n        \"\"\"\n        self._items.append(item)\n\n    def pop(self) -> Any:\n        \"\"\"Remove and return the top item from the stack.\n\n        Returns:\n            The most recently pushed item.\n\n        Raises:\n            StackEmptyError: If the stack is empty.\n        \"\"\"\n        if self.is_empty():\n            raise StackEmptyError(\"Cannot pop from an empty stack.\")\n        return self._items.pop()\n\n    def peek(self) -> Any:\n        \"\"\"Return the top item without removing it.\n\n        Returns:\n            The most recently pushed item.\n\n        Raises:\n            StackEmptyError: If the stack is empty.\n        \"\"\"\n        if self.is_empty():\n            raise StackEmptyError(\"Cannot peek at an empty stack.\")\n        return self._items[-1]\n\n    def is_empty(self) -> bool:\n        \"\"\"Check whether the stack contains no items.\n\n        Returns:\n            True if the stack is empty, False otherwise.\n        \"\"\"\n        return len(self._items) == 0\n\n    def size(self) -> int:\n        \"\"\"Return the number of items in the stack.\n\n        Returns:\n            The current number of elements.\n        \"\"\"\n        return len(self._items)\n\n    def __repr__(self) -> str:\n        \"\"\"Return a developer-friendly string representation.\"\"\"\n        return f\"Stack({self._items!r})\"",
+    "description": "A well-written Python Stack class featuring proper type hints, comprehensive docstrings, a custom exception class, clean method structure, and appropriate use of encapsulation. This code should pass a review with no major issues — it represents a best-practice implementation."
+  },
+  {
+    "id": "empty_input",
+    "name": "Empty Input (Edge Case)",
+    "type": "edge",
+    "language": "unknown",
+    "code": "",
+    "description": "An empty string submitted as code. Tests how the agent handles the absence of any input — it should gracefully report that no code was provided rather than crash or hallucinate issues."
+  },
+  {
+    "id": "not_code",
+    "name": "Non-Code Input — A Poem (Edge Case)",
+    "type": "edge",
+    "language": "unknown",
+    "code": "Roses are red,\nViolets are blue,\nSemicolons are missing,\nAnd so is line two.\n\nThe compiler screams,\nThe runtime weeps,\nMy stack overflows,\nWhile the deadline creeps.\n\nI debug all night,\nBy the monitor's glow,\nIs it art or code?\nThe world may never know.",
+    "description": "A poem about programming submitted as if it were code. Tests whether the agent can recognize that the input is natural language prose rather than source code, and respond appropriately instead of attempting a technical code review."
+  },
+  {
+    "id": "obfuscated_code",
+    "name": "Obfuscated Python One-Liner (Edge Case)",
+    "type": "edge",
+    "language": "python",
+    "code": "print('\\n'.join((lambda f: [f(i) for i in range(1, 101)])(lambda x: 'FizzBuzz' if x % 15 == 0 else ('Fizz' if x % 3 == 0 else ('Buzz' if x % 5 == 0 else str(x))))))",
+    "description": "A valid but heavily obfuscated Python one-liner that implements FizzBuzz using nested lambdas and list comprehensions. Tests the agent's ability to identify readability and maintainability issues in technically correct but intentionally obscure code."
+  }
+]

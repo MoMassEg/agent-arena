@@ -1,0 +1,357 @@
+{
+  "metadata": {
+    "webhook_url": "http://localhost:5678/webhook/code-review",
+    "timestamp": "2026-10-27T09:07:37.383447",
+    "total_tests": 6,
+    "total_time_seconds": 11.745
+  },
+  "results": [
+    {
+      "test_name": "Python Off-by-One Error",
+      "description": "A Python function intended to return the last N items from a list with an off-by-one error (uses lst[len(lst)-n+1:]).",
+      "payload": {
+        "code": "def get_last_n_items(lst, n):\n    \"\"\"Return the last n items from a list.\"\"\"\n    if n <= 0:\n        return []\n    if n >= len(lst):\n        return lst[:]\n    return lst[len(lst)-n+1:]\n\n# Example usage:\nresult = get_last_n_items([1, 2, 3, 4, 5], 3)\nprint(result)  # Expected: [3, 4, 5], Actual: [4, 5]",
+        "language": "python"
+      },
+      "status_code": 200,
+      "response": {
+        "status": "success",
+        "timestamp": "2026-10-27T06:07:30.329Z",
+        "input": {
+          "language": "python",
+          "codeLength": 300,
+          "codePreview": "def get_last_n_items(lst, n):\n    \"\"\"Return the last n items from a list.\"\"\"\n    if n <= 0:\n        ..."
+        },
+        "review": {
+          "summary": "The function incorrectly slices the list, leading to off‑by‑one errors and wrong results.",
+          "severity": "critical",
+          "issueCount": 1,
+          "issues": [
+            {
+              "severity": "critical",
+              "category": "bug",
+              "line": "9",
+              "description": "The slice `lst[len(lst)-n+1:]` omits the first element of the desired tail, returning only n‑1 items.",
+              "suggestion": "Replace the return statement with `return lst[-n:]` or `return lst[len(lst)-n:]` to correctly return the last n items."
+            }
+          ],
+          "metrics": {
+            "readability": 8,
+            "maintainability": 8,
+            "security": 9,
+            "performance": 9,
+            "overall": 8
+          }
+        },
+        "deepAnalysis": {
+          "exploitScenarios": [
+            {
+              "vulnerability": "Off‑by‑one slice leading to incomplete data extraction",
+              "attackVector": "An attacker supplies a crafted list and a value for `n` that is used later for security decisions (e.g., extracting the last N authentication tokens, password hashes, or permission flags). Because the function drops the first element of the intended tail, the subsequent logic operates on a truncated set, potentially allowing the attacker to bypass checks or gain unauthorized access.",
+              "impact": "Incorrect authorization decisions, privilege escalation, or denial of service if downstream code expects exactly N items and crashes on a shorter list.",
+              "cvssEstimate": "6.5"
+            }
+          ],
+          "fixSuggestions": [
+            {
+              "issue": "Off‑by‑one error in the slice expression; it returns n‑1 items instead of n.",
+              "currentCode": "return lst[len(lst)-n+1:]",
+              "fixedCode": "return lst[-n:]  # or equivalently return lst[len(lst)-n:]",
+              "explanation": "Using a negative index (`-n`) or `len(lst)-n` correctly computes the start position of the last `n` elements. The original `+1` shifted the start one position to the right, dropping the first element of the desired slice."
+            }
+          ],
+          "prioritizedActions": [
+            "Update the slice to `return lst[-n:]` and add unit tests covering edge cases (n=0, n=1, n=len(lst), n>len(lst)).",
+            "Review all call sites of `get_last_n_items` to ensure they do not rely on the buggy behavior; adjust any logic that assumes the previous off‑by‑one result.",
+            "Add input validation and documentation clarifying that `n` must be a non‑negative integer and that the function returns a new list copy."
+          ]
+        },
+        "metadata": {
+          "model": "openai/gpt-oss-120b",
+          "tokensUsed": 698,
+          "engine": "n8n-workflow",
+          "version": "1.0.0"
+        }
+      },
+      "response_time_seconds": 3.424,
+      "error": null
+    },
+    {
+      "test_name": "JavaScript SQL Injection Vulnerability",
+      "description": "Node.js Express endpoints concatenating user input directly into SQL queries with hardcoded credentials.",
+      "payload": {
+        "code": "const express = require('express');\nconst mysql = require('mysql');\n\nconst app = express();\napp.use(express.json());\n\nconst db = mysql.createConnection({\n  host: 'localhost',\n  user: 'root',\n  password: 'password123',\n  database: 'users_db'\n});\n\napp.get('/api/users', (req, res) => {\n  const username = req.query.username;\n  const query = \"SELECT * FROM users WHERE username = '\" + username + \"'\";\n  db.query(query, (err, results) => {\n    if (err) {\n      res.status(500).send('Database error');\n      return;\n    }\n    res.json(results);\n  });\n});\n\napp.listen(3000, () => console.log('Server running on port 3000'));",
+        "language": "javascript"
+      },
+      "status_code": 200,
+      "response": {
+        "status": "success",
+        "timestamp": "2026-10-27T06:07:35.562Z",
+        "input": {
+          "language": "javascript",
+          "codeLength": 618,
+          "codePreview": "const express = require('express');\nconst mysql = require('mysql');\n\nconst app = express();\napp.use(..."
+        },
+        "review": {
+          "summary": "The code functions but has serious security flaws and lacks best practices for configuration and input handling.",
+          "severity": "critical",
+          "issueCount": 6,
+          "issues": [
+            {
+              "severity": "critical",
+              "category": "security",
+              "line": "16",
+              "description": "SQL query is built by concatenating user input, leading to SQL injection vulnerability.",
+              "suggestion": "Use parameterized queries or prepared statements, e.g., db.query('SELECT * FROM users WHERE username = ?', [username], ...);"
+            },
+            {
+              "severity": "critical",
+              "category": "security",
+              "line": "10",
+              "description": "Database credentials are hard‑coded in source code.",
+              "suggestion": "Store credentials in environment variables or a secure secrets manager and read them at runtime."
+            },
+            {
+              "severity": "warning",
+              "category": "best-practice",
+              "line": "7-12",
+              "description": "No error handling for the MySQL connection establishment.",
+              "suggestion": "Add a connection error callback or use db.connect(err => { if (err) { console.error(err); process.exit(1); } });"
+            },
+            {
+              "severity": "warning",
+              "category": "bug",
+              "line": "15",
+              "description": "If `username` query parameter is missing, the SQL statement becomes invalid and may return all rows.",
+              "suggestion": "Validate that `username` is provided and return a 400 Bad Request if not."
+            },
+            {
+              "severity": "warning",
+              "category": "best-practice",
+              "line": "14-24",
+              "description": "Callback‑based MySQL API makes error propagation harder and reduces readability.",
+              "suggestion": "Consider using the promise‑based `mysql2` library or wrap callbacks in promises for async/await usage."
+            },
+            {
+              "severity": "info",
+              "category": "style",
+              "line": "1-26",
+              "description": "No security‑related middleware (e.g., helmet, cors) is applied to the Express app.",
+              "suggestion": "Add `app.use(require('helmet')());` and configure CORS as needed."
+            }
+          ],
+          "metrics": {
+            "readability": 7,
+            "maintainability": 6,
+            "security": 4,
+            "performance": 7,
+            "overall": 6
+          }
+        },
+        "deepAnalysis": {
+          "exploitScenarios": [
+            {
+              "vulnerability": "SQL Injection",
+              "attackVector": "An attacker supplies a crafted `username` query parameter such as `admin' OR '1'='1` which is concatenated directly into the SQL statement. The resulting query becomes `SELECT * FROM users WHERE username = 'admin' OR '1'='1'`, causing the database to return all user records or execute arbitrary SQL.",
+              "impact": "Unauthorized data disclosure (all user records), data manipulation, privilege escalation, or even full database compromise if additional statements are allowed.",
+              "cvssEstimate": "9.8"
+            },
+            {
+              "vulnerability": "Hard‑coded Database Credentials",
+              "attackVector": "An attacker who gains read access to the source repository, container image, or server file system can extract the plaintext MySQL credentials (`root` / `password123`). These credentials can then be used to connect directly to the database from any host that can reach it.",
+              "impact": "Complete compromise of the `users_db` database, allowing data exfiltration, modification, or deletion. May also enable lateral movement to other services if the same credentials are reused.",
+              "cvssEstimate": "9.1"
+            }
+          ],
+          "fixSuggestions": [
+            {
+              "issue": "SQL Injection due to string concatenation",
+              "currentCode": "const query = \"SELECT * FROM users WHERE username = '\" + username + \"'\";\n db.query(query, (err, results) => { ... });",
+              "fixedCode": "const query = \"SELECT * FROM users WHERE username = ?\";\n db.query(query, [username], (err, results) => { ... });",
+              "explanation": "Using parameter placeholders (`?`) forces the MySQL driver to treat `username` as a value, not as part of the SQL syntax, eliminating injection vectors. The driver safely escapes the input."
+            },
+            {
+              "issue": "Hard‑coded database credentials",
+              "currentCode": "const db = mysql.createConnection({\n  host: 'localhost',\n  user: 'root',\n  password: 'password123',\n  database: 'users_db'\n});",
+              "fixedCode": "const db = mysql.createConnection({\n  host: process.env.DB_HOST || 'localhost',\n  user: process.env.DB_USER,\n  password: process.env.DB_PASSWORD,\n  database: process.env.DB_NAME || 'users_db'\n});\n// Ensure environment variables are set securely, e.g., via Docker secrets, Kubernetes secrets, or a vault.",
+              "explanation": "Moving credentials out of source code prevents accidental exposure through version control or deployment artifacts. Environment variables (or a dedicated secrets manager) are loaded at runtime and can be rotated without code changes."
+            },
+            {
+              "issue": "Missing input validation / sanitisation",
+              "currentCode": "const username = req.query.username;",
+              "fixedCode": "const username = typeof req.query.username === 'string' && req.query.username.trim().length > 0 ? req.query.username.trim() : null;\nif (!username) {\n  return res.status(400).json({ error: 'Invalid username parameter' });\n}",
+              "explanation": "Validating that the input conforms to expected format (e.g., non‑empty alphanumeric string) reduces the attack surface and provides clearer error responses."
+            },
+            {
+              "issue": "Improper error handling – leaking internal errors",
+              "currentCode": "if (err) { res.status(500).send('Database error'); return; }",
+              "fixedCode": "if (err) {\n  console.error('Database query failed:', err);\n  return res.status(500).json({ error: 'Internal server error' });\n}",
+              "explanation": "Logging the detailed error internally while returning a generic message prevents information disclosure to attackers."
+            }
+          ],
+          "prioritizedActions": [
+            "Replace string‑concatenated SQL with parameterized queries (fix SQL injection).",
+            "Remove hard‑coded DB credentials; load them securely from environment variables or a secrets manager.",
+            "Add strict input validation for the `username` parameter and improve error handling/logging."
+          ]
+        },
+        "metadata": {
+          "model": "openai/gpt-oss-120b",
+          "tokensUsed": 1409,
+          "engine": "n8n-workflow",
+          "version": "1.0.0"
+        }
+      },
+      "response_time_seconds": 5.668,
+      "error": null
+    },
+    {
+      "test_name": "Python Clean Code (Stack Implementation)",
+      "description": "A clean, well-documented Stack class with type hints, custom exception, and proper docstrings.",
+      "payload": {
+        "code": "from typing import Any, Optional\n\nclass StackEmptyError(Exception):\n    \"\"\"Raised when an operation is attempted on an empty stack.\"\"\"\n    pass\n\nclass Stack:\n    \"\"\"A last-in, first-out (LIFO) data structure.\"\"\"\n    def __init__(self) -> None:\n        self._items: list[Any] = []\n\n    def push(self, item: Any) -> None:\n        self._items.append(item)\n\n    def pop(self) -> Any:\n        if self.is_empty():\n            raise StackEmptyError(\"Cannot pop from an empty stack.\")\n        return self._items.pop()\n\n    def is_empty(self) -> bool:\n        return len(self._items) == 0\n\n    def size(self) -> int:\n        return len(self._items)",
+        "language": "python"
+      },
+      "status_code": 200,
+      "response": {
+        "status": "success",
+        "timestamp": "2026-10-27T06:07:36.368Z",
+        "input": {
+          "language": "python",
+          "codeLength": 639,
+          "codePreview": "from typing import Any, Optional\n\nclass StackEmptyError(Exception):\n    \"\"\"Raised when an operation ..."
+        },
+        "review": {
+          "summary": "Clean implementation of a simple stack with proper error handling and type hints.",
+          "severity": "clean",
+          "issueCount": 0,
+          "issues": [],
+          "metrics": {
+            "readability": 9,
+            "maintainability": 9,
+            "security": 9,
+            "performance": 9,
+            "overall": 9
+          }
+        },
+        "deepAnalysis": null,
+        "metadata": {
+          "model": "openai/gpt-oss-120b",
+          "tokensUsed": 618,
+          "engine": "n8n-workflow",
+          "version": "1.0.0"
+        }
+      },
+      "response_time_seconds": 0.872,
+      "error": null
+    },
+    {
+      "test_name": "Empty Input (Edge Case)",
+      "description": "An empty string submitted as code. The agent should gracefully detect and reject it without calling the LLM.",
+      "payload": {
+        "code": "",
+        "language": "unknown"
+      },
+      "status_code": 400,
+      "response": {
+        "status": "error",
+        "timestamp": "2026-10-27T06:07:36.488Z",
+        "error": {
+          "type": "VALIDATION_ERROR",
+          "message": "Validation failed: Code field is empty or missing. Unsupported language: 'unknown'. Supported: python, javascript, typescript, java, c, cpp, c++, csharp, c#, go, rust, ruby, php, swift, kotlin, scala, r, sql, bash, shell, powershell, html, css, yaml, json, xml, dockerfile, terraform, hcl",
+          "details": [
+            "Code field is empty or missing.",
+            "Unsupported language: 'unknown'. Supported: python, javascript, typescript, java, c, cpp, c++, csharp, c#, go, rust, ruby, php, swift, kotlin, scala, r, sql, bash, shell, powershell, html, css, yaml, json, xml, dockerfile, terraform, hcl"
+          ]
+        },
+        "metadata": {
+          "engine": "n8n-workflow",
+          "version": "1.0.0"
+        }
+      },
+      "response_time_seconds": 0.123,
+      "error": null
+    },
+    {
+      "test_name": "Non-Code Input — A Poem (Edge Case)",
+      "description": "A poem about programming submitted as code. Tests recognition of natural language prose.",
+      "payload": {
+        "code": "Roses are red,\nViolets are blue,\nSemicolons are missing,\nAnd so is line two.\n\nThe compiler screams,\nThe runtime weeps,\nMy stack overflows,\nWhile the deadline creeps.",
+        "language": "unknown"
+      },
+      "status_code": 400,
+      "response": {
+        "status": "error",
+        "timestamp": "2026-10-27T06:07:36.592Z",
+        "error": {
+          "type": "VALIDATION_ERROR",
+          "message": "Validation failed: Unsupported language: 'unknown'. Supported: python, javascript, typescript, java, c, cpp, c++, csharp, c#, go, rust, ruby, php, swift, kotlin, scala, r, sql, bash, shell, powershell, html, css, yaml, json, xml, dockerfile, terraform, hcl",
+          "details": [
+            "Unsupported language: 'unknown'. Supported: python, javascript, typescript, java, c, cpp, c++, csharp, c#, go, rust, ruby, php, swift, kotlin, scala, r, sql, bash, shell, powershell, html, css, yaml, json, xml, dockerfile, terraform, hcl"
+          ]
+        },
+        "metadata": {
+          "engine": "n8n-workflow",
+          "version": "1.0.0"
+        }
+      },
+      "response_time_seconds": 0.113,
+      "error": null
+    },
+    {
+      "test_name": "Obfuscated Python One-Liner (Edge Case)",
+      "description": "A valid but heavily obfuscated Python lambda FizzBuzz one-liner testing style and readability checks.",
+      "payload": {
+        "code": "fizzbuzz = lambda n: [('Fizz'*(i%3==0) + 'Buzz'*(i%5==0) or str(i)) for i in range(1, n+1)]\nprint(fizzbuzz(15))",
+        "language": "python"
+      },
+      "status_code": 200,
+      "response": {
+        "status": "success",
+        "timestamp": "2026-10-27T06:07:37.984Z",
+        "input": {
+          "language": "python",
+          "codeLength": 111,
+          "codePreview": "fizzbuzz = lambda n: [('Fizz'*(i%3==0) + 'Buzz'*(i%5==0) or str(i)) for i in range(1, n+1)]\nprint(fi..."
+        },
+        "review": {
+          "summary": "The code works but sacrifices readability and best practices by using a lambda for a multi-step operation.",
+          "severity": "warning",
+          "issueCount": 2,
+          "issues": [
+            {
+              "severity": "warning",
+              "category": "style",
+              "line": "1",
+              "description": "Using a lambda to implement a multi-line list comprehension reduces readability and makes debugging harder.",
+              "suggestion": "Replace the lambda with a regular function definition and use explicit conditional logic for clarity."
+            },
+            {
+              "severity": "info",
+              "category": "best-practice",
+              "line": "1",
+              "description": "String multiplication with boolean expressions works but is obscure for readers unfamiliar with the trick.",
+              "suggestion": "Use explicit if/else statements (e.g., 'Fizz' if i % 3 == 0 else '' ) to improve clarity."
+            }
+          ],
+          "metrics": {
+            "readability": 5,
+            "maintainability": 5,
+            "security": 10,
+            "performance": 9,
+            "overall": 7
+          }
+        },
+        "deepAnalysis": null,
+        "metadata": {
+          "model": "openai/gpt-oss-120b",
+          "tokensUsed": 703,
+          "engine": "n8n-workflow",
+          "version": "1.0.0"
+        }
+      },
+      "response_time_seconds": 1.545,
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite Databases & logs
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+2_n8n_agent/database.sqlite
+crash.journal
+*.log
+
+# Environment files
+.env
+.env.local
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor & IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node / npm
+node_modules/
+npm-debug.log*
